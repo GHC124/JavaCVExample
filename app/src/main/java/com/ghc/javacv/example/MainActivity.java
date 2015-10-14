@@ -40,7 +40,7 @@ public class MainActivity extends Activity implements OnClickListener {
 
     private PowerManager.WakeLock mWakeLock;
 
-    private String ffmpeg_link = "rtmp://alphaways.net/live/chungpv2";
+    private String ffmpeg_link = "rtmp://alphaways.net/live/mystream";
 
     long startTime = 0;
     boolean recording = false;
@@ -79,7 +79,7 @@ public class MainActivity extends Activity implements OnClickListener {
     private Button btnRecorderControl;
 
     /* The number of seconds in the continuous record loop (or 0 to disable loop). */
-    final int RECORD_LENGTH = 10;
+    final int RECORD_LENGTH = 0;
     Frame[] images;
     long[] timestamps;
     ShortBuffer[] samples;
@@ -366,12 +366,14 @@ public class MainActivity extends Activity implements OnClickListener {
                     // If "recording" isn't true when start this thread, it never get's set according to this if statement...!!!
                     // Why?  Good question...
                     if (recording) {
-                        if (RECORD_LENGTH <= 0) try {
-                            recorder.recordSamples(audioData);
-                            //Log.v(LOG_TAG,"recording " + 1024*i + " to " + 1024*i+1024);
-                        } catch (FFmpegFrameRecorder.Exception e) {
-                            Log.v(LOG_TAG,e.getMessage());
-                            e.printStackTrace();
+                        if (RECORD_LENGTH <= 0) {
+                            try {
+                                recorder.recordSamples(audioData);
+                                Log.v(LOG_TAG, "recording");
+                            } catch (FFmpegFrameRecorder.Exception e) {
+                                Log.v(LOG_TAG, e.getMessage());
+                                e.printStackTrace();
+                            }
                         }
                     }
                 }
@@ -486,18 +488,20 @@ public class MainActivity extends Activity implements OnClickListener {
             }
             /* get video data */
             if (yuvImage != null && recording) {
-                ((ByteBuffer)yuvImage.image[0].position(0)).put(data);
+                ((ByteBuffer) yuvImage.image[0].position(0)).put(data);
 
-                if (RECORD_LENGTH <= 0) try {
-                    Log.v(LOG_TAG,"Writing Frame");
-                    long t = 1000 * (System.currentTimeMillis() - startTime);
-                    if (t > recorder.getTimestamp()) {
-                        recorder.setTimestamp(t);
+                if (RECORD_LENGTH <= 0) {
+                    try {
+                        Log.v(LOG_TAG, "Writing Frame");
+                        long t = 1000 * (System.currentTimeMillis() - startTime);
+                        if (t > recorder.getTimestamp()) {
+                            recorder.setTimestamp(t);
+                        }
+                        recorder.record(yuvImage);
+                    } catch (FFmpegFrameRecorder.Exception e) {
+                        Log.v(LOG_TAG, e.getMessage());
+                        e.printStackTrace();
                     }
-                    recorder.record(yuvImage);
-                } catch (FFmpegFrameRecorder.Exception e) {
-                    Log.v(LOG_TAG,e.getMessage());
-                    e.printStackTrace();
                 }
             }
         }
